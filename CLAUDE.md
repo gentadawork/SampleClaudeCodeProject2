@@ -84,9 +84,8 @@ class TimerState:
 ```
 
 ## [Build & Commands]
-- 依存関係インストール: `.venv/Scripts/pip.exe install ❓❓❓`
-｛計画後に追記｝
-- ソフトウェアの実行: `.venv/Scripts/python.exe -m ❓❓❓`｛計画後に追記｝
+- 依存関係インストール: `.venv/Scripts/pip.exe install pytest ruff`
+- ソフトウェアの実行: `.venv/Scripts/python.exe -m timer.app`
 - 全テスト実行: `.venv/Scripts/pytest.exe -v`
 - 特定のテスト実行: `.venv/Scripts/pytest.exe %s`
 - リンター (Ruff): `.venv/Scripts/ruff.exe check .`
@@ -99,8 +98,10 @@ class TimerState:
 - エラーハンドリング: `try-except` では具体的な例外（例: `ValueError`）をキャッチし、`Exception` のみのキャッチは避ける。
 
 ## [Common Patterns]
-｛計画後に追記｝
-｛開発後に追記｝
+
+- **状態の変更は `state.py` の関数で行う**: `state.remaining_sec -= 1` のような直接操作はテストファイル以外では行わず、`tick()` などの関数を通じて変更する。
+- **表示は `display.py` に集約**: `print()` を `app.py` から直接呼ばない。表示に関する処理は `display.py` の関数を使う。
+- **キー操作のロジックは `handle_key()` に集約**: 新しいキー操作を追加するときは `handle_key()` に `elif key == "..."` を追加する。
 
 ## [Windows / Environment Notes]
 - 仮想環境: プロジェクトルートの `.venv/` を使用する。
