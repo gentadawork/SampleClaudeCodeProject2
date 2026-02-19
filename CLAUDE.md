@@ -102,6 +102,17 @@ class TimerState:
 - **状態の変更は `state.py` の関数で行う**: `state.remaining_sec -= 1` のような直接操作はテストファイル以外では行わず、`tick()` などの関数を通じて変更する。
 - **表示は `display.py` に集約**: `print()` を `app.py` から直接呼ばない。表示に関する処理は `display.py` の関数を使う。
 - **キー操作のロジックは `handle_key()` に集約**: 新しいキー操作を追加するときは `handle_key()` に `elif key == "..."` を追加する。
+- **ユーザー通知（音・表示を問わず）は `display.py` に集約**: 音声通知も「ユーザーへの出力」なので `display.py` に置く。`app.py` から `winsound` を直接呼ばない。
+- **状態変化の検出は呼び出し前後で比較する**: `tick()` のような関数が状態を変えるとき、変化のタイミングを検出したい場合は呼び出し前に値を保存して比較する。
+
+  ```python
+  prev_phase = state.phase
+  tick(state)
+  if prev_phase == "focus" and state.phase == "break":
+      # フェーズが変わった瞬間だけ実行したい処理
+  ```
+
+- **Windows ビルトイン `winsound` でビープ音**: 外部パッケージ不要。`winsound.Beep(周波数Hz, 長さms)` で鳴らせる。
 
 ## [Windows / Environment Notes]
 - 仮想環境: プロジェクトルートの `.venv/` を使用する。

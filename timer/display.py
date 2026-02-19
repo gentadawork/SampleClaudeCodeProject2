@@ -1,6 +1,7 @@
 """タイマーの表示を担当するUI層。"""
 
 import sys
+import winsound
 
 from timer.state import TimerState
 
@@ -31,3 +32,13 @@ def render(state: TimerState) -> None:
 def print_help() -> None:
     """操作方法を表示する。"""
     print("\n操作: [s]開始  [p]一時停止/再開  [q]終了")
+
+
+def play_focus_end_sound() -> None:
+    """集中時間終了時にビープ音を鳴らす。"""
+    winsound.Beep(500, 500)
+
+
+def play_break_end_sound() -> None:
+    """休憩時間終了時にビープ音を鳴らす。"""
+    winsound.Beep(1000, 500)

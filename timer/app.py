@@ -3,7 +3,7 @@
 import msvcrt
 import time
 
-from timer.display import print_help, render
+from timer.display import play_break_end_sound, play_focus_end_sound, print_help, render
 from timer.state import TimerState, tick
 
 POLL_INTERVAL = 0.1  # キー入力をチェックする間隔（秒）
@@ -51,7 +51,12 @@ def run() -> None:
             elapsed += POLL_INTERVAL
             if elapsed >= 1.0:
                 elapsed = 0.0
+                prev_phase = state.phase
                 tick(state)
+                if prev_phase == "focus" and state.phase == "break":
+                    play_focus_end_sound()
+                elif prev_phase == "break" and state.phase == "focus":
+                    play_break_end_sound()
 
         render(state)
         time.sleep(POLL_INTERVAL)
