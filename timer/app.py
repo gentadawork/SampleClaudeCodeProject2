@@ -51,14 +51,16 @@ def run() -> None:
             keep_running = handle_key(key, state)
 
             if not keep_running:
-                # q キー: 進行中エントリを閉じ、終了エントリを追加してループ終了
+                # q キー: 進行中エントリを閉じ、終了エントリを追加してログ保存
                 if current_entry is not None:
                     logger.end_entry(current_entry)
                     entries.append(current_entry)
                 quit_entry = logger.start_entry("終了")
                 logger.end_entry(quit_entry)
                 entries.append(quit_entry)
-                print("\n終了しました。")
+                filepath = datetime.now().strftime("log_%Y%m%d_%H%M.csv")
+                logger.save_to_csv(entries, filepath)
+                display.print_log_saved(filepath)
                 break
 
             elif key == "l":
