@@ -29,9 +29,28 @@ def render(state: TimerState) -> None:
     sys.stdout.flush()
 
 
+def get_task_name() -> str:
+    """作業名をユーザーから入力させる。
+
+    Returns:
+        入力された作業名。空の場合は "作業" を返す。
+    """
+    name = input("作業名を入力してください: ").strip()
+    return name if name else "作業"
+
+
+def print_log_saved(filepath: str) -> None:
+    """CSVファイルへの保存完了メッセージを表示する。
+
+    Args:
+        filepath: 保存されたファイルのパス。
+    """
+    print(f"\nログを保存しました: {filepath}")
+
+
 def print_help() -> None:
     """操作方法を表示する。"""
-    print("\n操作: [s]開始  [p]一時停止/再開  [q]終了")
+    print("\n操作: [s]開始  [p]一時停止/再開  [l]ログ保存  [q]終了")
 
 
 def play_focus_end_sound() -> None:

@@ -30,6 +30,13 @@
 - コマンドライン上でタイマーの状態が分かるようにする。
   - mm:ss の書式での時間表示
   - 視覚的にわかりやすいように、残りの分数の「🟩」文字（残り24分なら24個の🟩）を、時間表示の次に表示
+- プログラム開始時に作業名を入力する。
+- 下記のイベント発生時刻を自動記録する。
+  - 集中時間の開始・終了
+  - 休憩時間の開始・終了
+  - 一時停止・再開
+  - 終了
+- `l` キーでイベント履歴を CSV ファイル（`log_YYYYMMDD_HHMM.csv`）に保存できる。
 
 ## [Architecture]
 
@@ -40,12 +47,14 @@ SampleClaudeCodeProject2/
 ├── timer/
 │   ├── __init__.py
 │   ├── state.py       # データ層: タイマーの残り秒数・フェーズ・状態を保持
+│   ├── logger.py      # ログ層: イベント記録と CSV 保存
 │   ├── display.py     # UI層: \r で同一行を上書き表示
 │   └── app.py         # 制御層: キー入力を受け取り、state を更新して display を呼ぶ
 ├── tests/
 │   ├── test_state.py  # データ層のテスト
 │   ├── test_display.py # UI層のテスト
-│   └── test_app.py    # 制御層のテスト
+│   ├── test_app.py    # 制御層のテスト
+│   └── test_logger.py # ログ層のテスト
 ├── pyproject.toml
 └── CLAUDE.md
 ```
@@ -55,7 +64,8 @@ SampleClaudeCodeProject2/
 | 層 | ファイル | 役割 |
 | --- | --- | --- |
 | データ | `timer/state.py` | タイマーの残り秒数・フェーズ・状態を保持 |
-| UI | `timer/display.py` | `\r` で同一行を上書き表示 |
+| ログ | `timer/logger.py` | イベント記録（`LogEntry`）と CSV 保存 |
+| UI | `timer/display.py` | `\r` で同一行を上書き表示、ユーザー入力受付 |
 | 制御 | `timer/app.py` | キー入力を受け取り、`state` を更新して `display` を呼ぶ |
 
 ### タイマーの状態（`state.py`）
@@ -74,13 +84,29 @@ class TimerState:
 | --- | --- |
 | `s` | 開始 |
 | `p` | 一時停止 / 再開 |
+| `l` | ログを CSV ファイルに保存 |
 | `q` | 終了（削除） |
 
 ### 表示イメージ
 
 ```text
+作業名を入力してください: ClaudeCodeの使い方に関する学習
+
+操作: [s]開始  [p]一時停止/再開  [l]ログ保存  [q]終了
 [集中] 24:35 🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩
-操作: [s]開始  [p]一時停止/再開  [q]終了
+```
+
+### CSV 保存フォーマット（`log_YYYYMMDD_HHMM.csv`）
+
+```text
+start, finish, title
+9:01, 9:26, ClaudeCodeの使い方に関する学習
+9:26, 9:31, 休憩
+9:31, 9:40, ClaudeCodeの使い方に関する学習
+9:40, 9:42, 一時停止・再開
+9:42, 9:58, ClaudeCodeの使い方に関する学習
+9:58, 9:59, 休憩
+9:59, 9:59, 終了
 ```
 
 ## [Build & Commands]
@@ -114,6 +140,33 @@ class TimerState:
 
 - **Windows ビルトイン `winsound` でビープ音**: 外部パッケージ不要。`winsound.Beep(周波数Hz, 長さms)` で鳴らせる。
 
+- **ログ管理は `logger.py` に集約**: イベント記録（`start_entry`/`end_entry`）とCSV保存（`save_to_csv`）は `logger.py` に置く。`app.py` からリストを直接操作しない。
+
+- **副作用のみのキー（`l` など）は `handle_key()` に追加しない**: `handle_key()` は `TimerState` の変更専用とする。ログ保存のような副作用処理は `run()` 内で `key == "l"` を直接チェックして実行する。
+
+- **進行中エントリのスナップショットは元を変えずにコピーを作る**: `save_to_csv` に進行中エントリを渡す際は `LogEntry` のコピーを生成し、`finish` に現在時刻をセットしてから渡す。元のエントリは変更しない。
+
+  ```python
+  snapshot = list(entries)
+  if current_entry is not None:
+      now = datetime.now()
+      snapshot.append(LogEntry(
+          title=current_entry.title,
+          start=current_entry.start,
+          finish=now,
+      ))
+  save_to_csv(snapshot, filepath)
+  ```
+
+- **`handle_key()` 呼び出し前後のステータス比較でログタイミングを検出**: `prev_status = state.status` を保存してから `handle_key()` を呼び出し、変化を比較してイベントを判断する。`prev_phase` との比較パターンと同じ考え方。
+
+  ```python
+  prev_status = state.status
+  handle_key(key, state)
+  if prev_status != "running" and state.status == "running":
+      # running になった瞬間だけ実行したい処理
+  ```
+
 ## [Windows / Environment Notes]
 - 仮想環境: プロジェクトルートの `.venv/` を使用する。
 - 日本語文字列: ruff の E501（行長）は日本語2列幅の影響で除外している（`pyproject.toml` の `ignore = ["E501"]`）。
@@ -140,4 +193,8 @@ class TimerState:
 - `p` キーで `"paused"` になるか
 - `p` キーを再度押すと `"running"` に戻るか
 
-｛開発後に追記｝
+**`tests/test_logger.py`** — ログ層
+
+- `start_entry()` でタイトルと開始時刻が設定され、終了時刻が `None` か
+- `end_entry()` で終了時刻が設定されるか
+- `save_to_csv()` で CSV ファイルが生成されるか
