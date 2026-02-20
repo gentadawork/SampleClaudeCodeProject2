@@ -1,0 +1,1 @@
+powershell -NoProfile -ExecutionPolicy Bypass -File "timer_app.ps1"
