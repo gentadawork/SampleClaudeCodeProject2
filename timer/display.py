@@ -51,6 +51,7 @@ def print_log_saved(filepath: str) -> None:
 def print_help() -> None:
     """操作方法を表示する。"""
     print("\n操作: [s]開始  [p]一時停止/再開  [l]ログ保存  [q]終了")
+    print("             01　　　　　　　　10　　　　　　　　　20　　　　　　　　　30")
 
 
 def play_focus_end_sound() -> None:
